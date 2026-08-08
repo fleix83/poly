@@ -20,6 +20,13 @@
     <string name="viewer_monospace_off">Default font</string>
     <string name="viewer_text_too_large">This file is too large for the text view (max. 10 MB).</string>
 
+    <!-- Office / HTML -->
+    <string name="office_converting">Converting document…</string>
+    <string name="office_error">This document could not be converted.</string>
+    <string name="xlsx_rows_shown">Only the first rows are shown.</string>
+    <string name="xlsx_more_rows">Load more</string>
+    <string name="html_external_blocked">External content blocked</string>
+
     <!-- PDF -->
     <string name="pdf_error">This PDF could not be opened.</string>
     <string name="pdf_password_title">Password required</string>

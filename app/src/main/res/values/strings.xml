@@ -22,6 +22,13 @@
     <string name="viewer_monospace_off">Standard-Schrift</string>
     <string name="viewer_text_too_large">Die Datei ist zu gross für die Textanzeige (max. 10 MB).</string>
 
+    <!-- Office / HTML -->
+    <string name="office_converting">Dokument wird konvertiert…</string>
+    <string name="office_error">Das Dokument konnte nicht konvertiert werden.</string>
+    <string name="xlsx_rows_shown">Nur die ersten Zeilen werden angezeigt.</string>
+    <string name="xlsx_more_rows">Weitere laden</string>
+    <string name="html_external_blocked">Externe Inhalte blockiert</string>
+
     <!-- PDF -->
     <string name="pdf_error">Das PDF konnte nicht geöffnet werden.</string>
     <string name="pdf_password_title">Passwort erforderlich</string>

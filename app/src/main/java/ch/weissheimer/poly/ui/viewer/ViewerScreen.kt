@@ -53,8 +53,10 @@ import ch.weissheimer.poly.R
 import ch.weissheimer.poly.appContainer
 import ch.weissheimer.poly.core.DocumentFormat
 import ch.weissheimer.poly.data.DocumentInfo
+import ch.weissheimer.poly.ui.viewer.renderers.HtmlRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.ImageRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.MarkdownRenderer
+import ch.weissheimer.poly.ui.viewer.renderers.OfficeRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.PdfViewRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.TextRenderer
 
@@ -100,6 +102,8 @@ private fun DocumentViewer(document: DocumentInfo, onBack: () -> Unit) {
             DocumentFormat.MARKDOWN -> MarkdownRenderer(container.fileRepository)
             DocumentFormat.JPEG, DocumentFormat.PNG, DocumentFormat.GIF -> ImageRenderer()
             DocumentFormat.PDF -> PdfViewRenderer()
+            DocumentFormat.DOCX, DocumentFormat.XLSX -> OfficeRenderer()
+            DocumentFormat.HTML -> HtmlRenderer(container.fileRepository)
             else -> UnsupportedRenderer()
         }
     }
