@@ -15,6 +15,12 @@
     <string name="viewer_error_open">Die Datei konnte nicht geöffnet werden.</string>
     <string name="viewer_error_permission">Kein Zugriff auf die Datei. Öffne sie erneut über den Dateimanager.</string>
     <string name="viewer_retry">Erneut versuchen</string>
+    <string name="viewer_share">Teilen</string>
+    <string name="viewer_more">Weitere Optionen</string>
+    <string name="viewer_mark">Markieren</string>
+    <string name="viewer_monospace_on">Monospace-Schrift</string>
+    <string name="viewer_monospace_off">Standard-Schrift</string>
+    <string name="viewer_text_too_large">Die Datei ist zu gross für die Textanzeige (max. 10 MB).</string>
 
     <!-- Formats -->
     <string name="format_txt">Text</string>

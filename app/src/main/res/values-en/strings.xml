@@ -13,6 +13,12 @@
     <string name="viewer_error_open">The file could not be opened.</string>
     <string name="viewer_error_permission">No access to this file. Open it again from your file manager.</string>
     <string name="viewer_retry">Retry</string>
+    <string name="viewer_share">Share</string>
+    <string name="viewer_more">More options</string>
+    <string name="viewer_mark">Highlight</string>
+    <string name="viewer_monospace_on">Monospace font</string>
+    <string name="viewer_monospace_off">Default font</string>
+    <string name="viewer_text_too_large">This file is too large for the text view (max. 10 MB).</string>
 
     <!-- Formats -->
     <string name="format_txt">Text</string>

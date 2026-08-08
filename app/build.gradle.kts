@@ -55,6 +55,14 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.kotlinx.coroutines.android)
 
+    implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
+    implementation(libs.telephoto.zoomable.image.coil3)
+    implementation(libs.markwon.core)
+    implementation(libs.markwon.ext.tables)
+    implementation(libs.markwon.ext.strikethrough)
+    implementation(libs.markwon.linkify)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
 }
