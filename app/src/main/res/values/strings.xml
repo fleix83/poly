@@ -22,6 +22,18 @@
     <string name="viewer_monospace_off">Standard-Schrift</string>
     <string name="viewer_text_too_large">Die Datei ist zu gross für die Textanzeige (max. 10 MB).</string>
 
+    <!-- Annotationen -->
+    <string name="annotation_active">Markieren aktiv</string>
+    <string name="annotation_mode_off">Markieren beenden</string>
+    <string name="annotation_undo">Rückgängig</string>
+    <string name="annotation_redo">Wiederholen</string>
+    <string name="annotation_edit_title">Markierung</string>
+    <string name="annotation_delete">Löschen</string>
+    <string name="annotation_tool_rect">Rechteck</string>
+    <string name="annotation_tool_freehand">Freihand</string>
+    <string name="annotation_orphaned">Die Datei wurde verändert: %1$d Markierung(en) konnten nicht mehr zugeordnet werden.</string>
+    <string name="action_close">Schliessen</string>
+
     <!-- Office / HTML -->
     <string name="office_converting">Dokument wird konvertiert…</string>
     <string name="office_error">Das Dokument konnte nicht konvertiert werden.</string>

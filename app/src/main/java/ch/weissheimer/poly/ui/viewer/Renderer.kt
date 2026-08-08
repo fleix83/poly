@@ -24,11 +24,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ch.weissheimer.poly.R
+import ch.weissheimer.poly.annotation.AnnotationSession
 import ch.weissheimer.poly.data.DocumentInfo
 
 /** Shared state and callbacks handed to every renderer. */
 class ViewerState(
     val document: DocumentInfo,
+    val annotations: AnnotationSession,
     /** Single tap on content: toggle the viewer chrome. */
     val onContentTap: () -> Unit,
 ) {

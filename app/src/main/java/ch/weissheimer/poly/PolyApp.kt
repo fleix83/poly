@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import androidx.room.Room
+import ch.weissheimer.poly.data.AnnotationRepository
 import ch.weissheimer.poly.data.FileRepository
 import ch.weissheimer.poly.data.RecentsRepository
 import ch.weissheimer.poly.data.db.PolyDatabase
@@ -48,6 +49,8 @@ class AppContainer(context: Context) {
     val fileRepository: FileRepository by lazy { FileRepository(appContext) }
 
     val recentsRepository: RecentsRepository by lazy { RecentsRepository(database.recentFileDao()) }
+
+    val annotationRepository: AnnotationRepository by lazy { AnnotationRepository(database.annotationDao()) }
 }
 
 val Context.appContainer: AppContainer
