@@ -16,11 +16,22 @@ class MainActivity : ComponentActivity() {
     /** Document handed over via VIEW/SEND; consumed by the nav host. */
     private val incomingDocument = MutableStateFlow<Uri?>(null)
 
+    /**
+     * URI of the intent already turned into navigation. Survives recreation:
+     * a plain config change must not re-open the document, but a relaunch
+     * with a NEW intent (e.g. after process death the OS delivers the fresh
+     * VIEW intent alongside restored state) must.
+     */
+    private var handledIntentUri: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (savedInstanceState == null) {
-            incomingDocument.value = extractDocumentUri(intent)
+        handledIntentUri = savedInstanceState?.getString(KEY_HANDLED_INTENT_URI)
+        val uri = extractDocumentUri(intent)
+        if (uri != null && uri.toString() != handledIntentUri) {
+            incomingDocument.value = uri
+            handledIntentUri = uri.toString()
         }
         setContent {
             PolyTheme {
@@ -32,9 +43,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_HANDLED_INTENT_URI, handledIntentUri)
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        extractDocumentUri(intent)?.let { incomingDocument.value = it }
+        extractDocumentUri(intent)?.let {
+            incomingDocument.value = it
+            handledIntentUri = it.toString()
+        }
+    }
+
+    private companion object {
+        const val KEY_HANDLED_INTENT_URI = "poly.handledIntentUri"
     }
 
     private fun extractDocumentUri(intent: Intent?): Uri? = when (intent?.action) {
