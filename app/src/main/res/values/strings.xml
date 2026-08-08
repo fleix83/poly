@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Poly</string>
+
+    <!-- Recents -->
+    <string name="recents_open_file">Datei öffnen</string>
+    <string name="recents_empty_title">Noch keine Dateien</string>
+    <string name="recents_empty_hint">Tippe unten auf die Schaltfläche, um eine Datei zu öffnen – oder öffne eine Datei aus einer anderen App mit Poly.</string>
+    <string name="recents_remove">Aus Liste entfernen</string>
+
+    <!-- Viewer -->
+    <string name="viewer_back">Zurück</string>
+    <string name="viewer_unsupported">Dieses Format wird noch nicht unterstützt: %1$s</string>
+    <string name="viewer_loading">Datei wird geladen…</string>
+    <string name="viewer_error_open">Die Datei konnte nicht geöffnet werden.</string>
+    <string name="viewer_error_permission">Kein Zugriff auf die Datei. Öffne sie erneut über den Dateimanager.</string>
+    <string name="viewer_retry">Erneut versuchen</string>
+
+    <!-- Formats -->
+    <string name="format_txt">Text</string>
+    <string name="format_md">Markdown</string>
+    <string name="format_pdf">PDF</string>
+    <string name="format_docx">Word-Dokument</string>
+    <string name="format_xlsx">Excel-Tabelle</string>
+    <string name="format_html">HTML</string>
+    <string name="format_image">Bild</string>
+    <string name="format_unknown">Unbekannt</string>
+</resources>
