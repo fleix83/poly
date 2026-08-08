@@ -24,4 +24,7 @@ interface AnnotationDao {
 
     @Query("SELECT COUNT(*) FROM annotations WHERE fileHash = :fileHash AND orphaned = 0")
     suspend fun countByHash(fileHash: String): Int
+
+    @Query("SELECT DISTINCT fileHash FROM annotations WHERE orphaned = 0")
+    fun observeAnnotatedHashes(): kotlinx.coroutines.flow.Flow<List<String>>
 }

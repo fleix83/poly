@@ -7,6 +7,12 @@
     <string name="recents_empty_title">Noch keine Dateien</string>
     <string name="recents_empty_hint">Tippe unten auf die Schaltfläche, um eine Datei zu öffnen – oder öffne eine Datei aus einer anderen App mit Poly.</string>
     <string name="recents_remove">Aus Liste entfernen</string>
+    <string name="recents_annotated">Enthält Markierungen</string>
+
+    <!-- About -->
+    <string name="about_title">Über Poly</string>
+    <string name="about_text">Poly zeigt gängige Dateiformate an und markiert Textstellen – offline, ohne Konto, ohne Tracking.</string>
+    <string name="about_licenses" translatable="false">Open-Source-Komponenten (Apache License 2.0): AndroidX/Jetpack Compose, Room, Navigation, Coil, telephoto, Markwon, pdfbox-android, Kotlin/kotlinx.coroutines.</string>
 
     <!-- Viewer -->
     <string name="viewer_back">Zurück</string>

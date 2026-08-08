@@ -5,6 +5,11 @@
     <string name="recents_empty_title">No files yet</string>
     <string name="recents_empty_hint">Tap the button below to open a file – or open a file from another app with Poly.</string>
     <string name="recents_remove">Remove from list</string>
+    <string name="recents_annotated">Contains highlights</string>
+
+    <!-- About -->
+    <string name="about_title">About Poly</string>
+    <string name="about_text">Poly views common file formats and highlights passages – offline, no account, no tracking.</string>
 
     <!-- Viewer -->
     <string name="viewer_back">Back</string>

@@ -66,4 +66,6 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
+    // Real XmlPullParser for JVM unit tests of the OOXML converters.
+    testImplementation("net.sf.kxml:kxml2:2.3.0")
 }

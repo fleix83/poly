@@ -16,9 +16,14 @@ class ReAnchorOutcome(
 
 class AnnotationRepository(private val dao: AnnotationDao) {
 
+    fun observeAnnotatedHashes() = dao.observeAnnotatedHashes()
+
     suspend fun save(annotation: Annotation) = dao.upsert(annotation.toEntity(orphaned = false))
 
     suspend fun delete(id: String) = dao.delete(id)
+
+    suspend fun loadFor(info: DocumentInfo, text: String?): ReAnchorOutcome =
+        loadFor(info.uri.toString(), info.sha256, text)
 
     /**
      * Loads displayable annotations for a document. Exact hash match wins;
@@ -27,14 +32,14 @@ class AnnotationRepository(private val dao: AnnotationDao) {
      * normalized coordinates stay valid), persisted under the new hash.
      * Unresolvable text highlights are stored as orphaned.
      */
-    suspend fun loadFor(info: DocumentInfo, text: String?): ReAnchorOutcome {
-        val byHash = dao.byHash(info.sha256)
+    suspend fun loadFor(fileUri: String, fileHash: String, text: String?): ReAnchorOutcome {
+        val byHash = dao.byHash(fileHash)
         if (byHash.isNotEmpty()) {
             return ReAnchorOutcome(byHash.mapNotNull { it.toDomain() }, 0)
         }
 
-        val previous = dao.byUri(info.uri.toString())
-            .filter { it.fileHash != info.sha256 && !it.orphaned }
+        val previous = dao.byUri(fileUri)
+            .filter { it.fileHash != fileHash && !it.orphaned }
         if (previous.isEmpty()) return ReAnchorOutcome(emptyList(), 0)
 
         val anchored = mutableListOf<Annotation>()
@@ -50,7 +55,7 @@ class AnnotationRepository(private val dao: AnnotationDao) {
                 } else null
                 if (rebound != null) {
                     val updated = domain.copy(
-                        fileHash = info.sha256,
+                        fileHash = fileHash,
                         anchor = rebound,
                         updatedAt = System.currentTimeMillis(),
                     )
@@ -62,7 +67,7 @@ class AnnotationRepository(private val dao: AnnotationDao) {
                 }
             } else {
                 val updated = domain.copy(
-                    fileHash = info.sha256,
+                    fileHash = fileHash,
                     updatedAt = System.currentTimeMillis(),
                 )
                 anchored.add(updated)

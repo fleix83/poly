@@ -456,7 +456,7 @@ private fun AnnotationStatusBar(session: AnnotationSession, showTools: Boolean) 
                 FilledIconToggleButton(
                     checked = session.activeTool == AnnotationTool.RECT,
                     onCheckedChange = { session.activeTool = AnnotationTool.RECT },
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
                         Icons.Default.CropSquare,
@@ -467,7 +467,7 @@ private fun AnnotationStatusBar(session: AnnotationSession, showTools: Boolean) 
                 FilledIconToggleButton(
                     checked = session.activeTool == AnnotationTool.FREEHAND,
                     onCheckedChange = { session.activeTool = AnnotationTool.FREEHAND },
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
                         Icons.Default.Gesture,
