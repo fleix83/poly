@@ -171,7 +171,12 @@ class TextRenderer(private val fileRepository: FileRepository) : DocumentRendere
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
+                contentPadding = PaddingValues(
+                    start = 20.dp,
+                    end = 20.dp,
+                    top = 24.dp + state.topContentInset,
+                    bottom = 24.dp,
+                ),
             ) {
                 itemsIndexed(registry.lines) { index, line ->
                     val lineStart = registry.lineStarts[index]

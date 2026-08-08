@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import ch.weissheimer.poly.R
 import ch.weissheimer.poly.annotation.AnnotationSession
 import ch.weissheimer.poly.data.DocumentInfo
@@ -36,6 +37,14 @@ class ViewerState(
 ) {
     /** Toolbar-controlled option for the text renderer. */
     var monospace by mutableStateOf(false)
+
+    /**
+     * Height of the overlaid chrome (status bar + toolbar + annotation
+     * strip) while it is visible, 0 when hidden. Scrolling renderers use it
+     * as top content inset so the start of the document is never stuck
+     * underneath the toolbar.
+     */
+    var topContentInset by mutableStateOf(0.dp)
 
     /**
      * Set by WebView renderers: returns the current page HTML with highlights

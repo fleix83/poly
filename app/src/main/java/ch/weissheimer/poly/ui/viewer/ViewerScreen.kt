@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -64,7 +65,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -278,6 +281,16 @@ private fun DocumentViewer(
         }
     }
 
+    // Content must not start underneath the overlaid chrome: measure it and
+    // hand the height to the renderers as an animated top inset.
+    var chromeHeightPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    val chromeInset by animateDpAsState(
+        targetValue = if (chromeVisible) with(density) { chromeHeightPx.toDp() } else 0.dp,
+        label = "chromeInset",
+    )
+    viewerState.topContentInset = chromeInset
+
     Box(
         Modifier
             .fillMaxSize()
@@ -291,7 +304,9 @@ private fun DocumentViewer(
             enter = fadeIn() + slideInVertically { -it },
             exit = fadeOut() + slideOutVertically { -it },
         ) {
-            Column {
+            Column(
+                Modifier.onGloballyPositioned { chromeHeightPx = it.size.height },
+            ) {
                 ViewerTopBar(
                     state = viewerState,
                     onBack = onBack,

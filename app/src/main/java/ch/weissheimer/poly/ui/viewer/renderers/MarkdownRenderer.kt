@@ -162,7 +162,12 @@ class MarkdownRenderer(private val fileRepository: FileRepository) : DocumentRen
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 24.dp),
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 24.dp + state.topContentInset,
+                        bottom = 24.dp,
+                    ),
             ) {
                 AndroidView(
                     modifier = Modifier

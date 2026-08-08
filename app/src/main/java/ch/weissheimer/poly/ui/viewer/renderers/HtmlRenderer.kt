@@ -62,7 +62,11 @@ class HtmlRenderer(private val fileRepository: FileRepository) : DocumentRendere
                 stringResource(R.string.viewer_error_open), modifier,
                 onRetry = { reloadKey++ },
             )
-            is HtmlLoad.Ready -> Column(modifier.fillMaxSize()) {
+            is HtmlLoad.Ready -> Column(
+                modifier
+                    .fillMaxSize()
+                    .padding(top = state.topContentInset),
+            ) {
                 if (l.hasExternalContent) {
                     Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
                         Text(
@@ -70,7 +74,6 @@ class HtmlRenderer(private val fileRepository: FileRepository) : DocumentRendere
                             style = MaterialTheme.typography.labelMedium,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .statusBarsPadding()
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                     }

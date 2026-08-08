@@ -272,7 +272,10 @@ private fun PdfPages(store: PdfPageStore, state: ViewerState, modifier: Modifier
                     modifier = Modifier
                         .width(viewportWidth * zoom)
                         .fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        top = 8.dp + state.topContentInset,
+                        bottom = 8.dp,
+                    ),
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
                 ) {
                     items(

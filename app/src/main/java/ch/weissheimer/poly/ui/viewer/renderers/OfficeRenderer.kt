@@ -107,7 +107,11 @@ class OfficeRenderer : DocumentRenderer {
         when (val l = load) {
             OfficeLoad.Converting -> ConversionProgress(modifier)
             OfficeLoad.Failed -> RendererError(stringResource(R.string.office_error), modifier)
-            is OfficeLoad.Ready -> Column(modifier.fillMaxSize()) {
+            is OfficeLoad.Ready -> Column(
+                modifier
+                    .fillMaxSize()
+                    .padding(top = state.topContentInset),
+            ) {
                 if (l.sheets.size > 1) {
                     SheetChips(
                         sheets = l.sheets,
@@ -158,7 +162,6 @@ private fun SheetChips(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
                 .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
