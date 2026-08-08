@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -56,6 +58,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -77,12 +81,18 @@ import ch.weissheimer.poly.annotation.AnnotationTool
 import ch.weissheimer.poly.appContainer
 import ch.weissheimer.poly.core.DocumentFormat
 import ch.weissheimer.poly.data.DocumentInfo
+import ch.weissheimer.poly.export.ExportPayload
+import ch.weissheimer.poly.export.Exporter
+import ch.weissheimer.poly.export.PdfAnnotationSaver
 import ch.weissheimer.poly.ui.viewer.renderers.HtmlRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.ImageRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.MarkdownRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.OfficeRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.PdfViewRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.TextRenderer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun ViewerScreen(
@@ -127,7 +137,9 @@ private fun DocumentViewer(
     session: AnnotationSession,
     onBack: () -> Unit,
 ) {
-    val container = LocalContext.current.appContainer
+    val context = LocalContext.current
+    val container = context.appContainer
+    val scope = rememberCoroutineScope()
     var chromeRequested by rememberSaveable { mutableStateOf(true) }
     val chromeVisible = chromeRequested || session.modeActive
 
@@ -161,6 +173,111 @@ private fun DocumentViewer(
         if (session.orphanedCount > 0) snackbarHostState.showSnackbar(orphanMessage)
     }
 
+    // --- Export / save / share ---
+    var exporting by remember { mutableStateOf(false) }
+    var pendingExport by remember { mutableStateOf<ExportPayload?>(null) }
+    var overwriteConfirm by remember { mutableStateOf(false) }
+    var shareDialog by remember { mutableStateOf(false) }
+    val exportFailedMessage = stringResource(R.string.export_failed)
+    val exportDoneMessage = stringResource(R.string.export_done)
+    val gifHintMessage = stringResource(R.string.gif_static_hint)
+
+    fun deliverPending(target: Uri?) {
+        val payload = pendingExport
+        pendingExport = null
+        if (target == null || payload == null) return
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openOutputStream(target)?.use { out ->
+                        payload.file.inputStream().use { it.copyTo(out) }
+                    } != null
+                }.getOrDefault(false)
+            }
+            snackbarHostState.showSnackbar(if (ok) exportDoneMessage else exportFailedMessage)
+        }
+    }
+
+    val savePdfLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf"),
+    ) { deliverPending(it) }
+    val savePngLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("image/png"),
+    ) { deliverPending(it) }
+    val saveJpegLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("image/jpeg"),
+    ) { deliverPending(it) }
+
+    fun launchSaveFor(payload: ExportPayload) {
+        pendingExport = payload
+        when (payload.mimeType) {
+            "image/png" -> savePngLauncher.launch(payload.suggestedName)
+            "image/jpeg" -> saveJpegLauncher.launch(payload.suggestedName)
+            else -> savePdfLauncher.launch(payload.suggestedName)
+        }
+    }
+
+    fun exportAnnotated() {
+        if (exporting) return
+        scope.launch {
+            exporting = true
+            try {
+                val payload = Exporter.buildAnnotatedExport(context, container, viewerState)
+                if (document.format == DocumentFormat.GIF) {
+                    snackbarHostState.showSnackbar(gifHintMessage)
+                }
+                launchSaveFor(payload)
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar(exportFailedMessage)
+            } finally {
+                exporting = false
+            }
+        }
+    }
+
+    fun overwriteOriginal() {
+        if (exporting) return
+        scope.launch {
+            exporting = true
+            try {
+                withContext(Dispatchers.IO) {
+                    val source = Exporter.pdfSource(context, document)
+                    context.contentResolver.openOutputStream(document.uri, "wt")?.use { out ->
+                        PdfAnnotationSaver.save(context, source, session.annotations.toList(), out)
+                    } ?: throw IllegalStateException("no write stream")
+                }
+                snackbarHostState.showSnackbar(exportDoneMessage)
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar(exportFailedMessage)
+            } finally {
+                exporting = false
+            }
+        }
+    }
+
+    fun shareAnnotated() {
+        if (exporting) return
+        scope.launch {
+            exporting = true
+            try {
+                val payload = Exporter.buildAnnotatedExport(context, container, viewerState)
+                val uri = FileProvider.getUriForFile(
+                    context, "${context.packageName}.fileprovider", payload.file,
+                )
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = payload.mimeType
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(send, null))
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar(exportFailedMessage)
+            } finally {
+                exporting = false
+            }
+        }
+    }
+
     Box(
         Modifier
             .fillMaxSize()
@@ -175,7 +292,21 @@ private fun DocumentViewer(
             exit = fadeOut() + slideOutVertically { -it },
         ) {
             Column {
-                ViewerTopBar(viewerState, onBack)
+                ViewerTopBar(
+                    state = viewerState,
+                    onBack = onBack,
+                    onShare = {
+                        if (session.annotations.isEmpty()) {
+                            shareOriginal(context, document)
+                        } else {
+                            shareDialog = true
+                        }
+                    },
+                    onExport = ::exportAnnotated,
+                    onOverwrite = if (document.format == DocumentFormat.PDF) {
+                        { overwriteConfirm = true }
+                    } else null,
+                )
                 AnimatedVisibility(visible = session.modeActive) {
                     AnnotationStatusBar(session, showTools = viewerState.document.format.isImage)
                 }
@@ -221,6 +352,63 @@ private fun DocumentViewer(
                     )
                 }
             }
+        }
+
+        if (exporting) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.Center),
+                shape = MaterialTheme.shapes.medium,
+                tonalElevation = 4.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    CircularProgressIndicator(Modifier.size(24.dp))
+                    Text(stringResource(R.string.export_working))
+                }
+            }
+        }
+
+        if (overwriteConfirm) {
+            AlertDialog(
+                onDismissRequest = { overwriteConfirm = false },
+                title = { Text(stringResource(R.string.overwrite_title)) },
+                text = { Text(stringResource(R.string.overwrite_text)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        overwriteConfirm = false
+                        overwriteOriginal()
+                    }) { Text(stringResource(R.string.overwrite_confirm)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { overwriteConfirm = false }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                },
+            )
+        }
+
+        if (shareDialog) {
+            AlertDialog(
+                onDismissRequest = { shareDialog = false },
+                title = { Text(stringResource(R.string.viewer_share)) },
+                text = { Text(stringResource(R.string.share_choice_text)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        shareDialog = false
+                        shareAnnotated()
+                    }) { Text(stringResource(R.string.share_with_annotations)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        shareDialog = false
+                        shareOriginal(context, document)
+                    }) { Text(stringResource(R.string.share_original)) }
+                },
+            )
         }
 
         session.editTarget?.let { target ->
@@ -349,9 +537,15 @@ private fun ColorRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ViewerTopBar(state: ViewerState, onBack: () -> Unit) {
-    val context = LocalContext.current
+private fun ViewerTopBar(
+    state: ViewerState,
+    onBack: () -> Unit,
+    onShare: () -> Unit,
+    onExport: () -> Unit,
+    onOverwrite: (() -> Unit)?,
+) {
     var menuOpen by remember { mutableStateOf(false) }
+    val format = state.document.format
 
     TopAppBar(
         title = { Text(state.document.displayName, maxLines = 1) },
@@ -364,28 +558,51 @@ private fun ViewerTopBar(state: ViewerState, onBack: () -> Unit) {
             }
         },
         actions = {
-            IconButton(onClick = { shareOriginal(context, state.document) }) {
+            IconButton(onClick = onShare) {
                 Icon(Icons.Default.Share, contentDescription = stringResource(R.string.viewer_share))
             }
-            if (state.document.format == DocumentFormat.TXT) {
+            if (format != DocumentFormat.UNKNOWN) {
                 IconButton(onClick = { menuOpen = true }) {
                     Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.viewer_more))
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    val exportLabel = when {
+                        format == DocumentFormat.PDF -> R.string.menu_save_copy
+                        format.isImage -> R.string.menu_export_image
+                        else -> R.string.menu_export_pdf
+                    }
                     DropdownMenuItem(
-                        text = {
-                            Text(
-                                stringResource(
-                                    if (state.monospace) R.string.viewer_monospace_off
-                                    else R.string.viewer_monospace_on
-                                )
-                            )
-                        },
+                        text = { Text(stringResource(exportLabel)) },
                         onClick = {
-                            state.monospace = !state.monospace
                             menuOpen = false
+                            onExport()
                         },
                     )
+                    if (onOverwrite != null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.menu_overwrite)) },
+                            onClick = {
+                                menuOpen = false
+                                onOverwrite()
+                            },
+                        )
+                    }
+                    if (format == DocumentFormat.TXT) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(
+                                        if (state.monospace) R.string.viewer_monospace_off
+                                        else R.string.viewer_monospace_on
+                                    )
+                                )
+                            },
+                            onClick = {
+                                state.monospace = !state.monospace
+                                menuOpen = false
+                            },
+                        )
+                    }
                 }
             }
         },

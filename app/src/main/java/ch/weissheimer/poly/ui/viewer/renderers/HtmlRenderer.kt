@@ -79,6 +79,7 @@ class HtmlRenderer(private val fileRepository: FileRepository) : DocumentRendere
                     html = l.html,
                     session = state.annotations,
                     onContentTap = { state.onContentTap() },
+                    onExportProvider = { state.exportHtmlProvider = it },
                     modifier = Modifier.fillMaxSize(),
                 )
             }

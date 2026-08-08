@@ -124,6 +124,7 @@ class OfficeRenderer : DocumentRenderer {
                     onContentTap = { state.onContentTap() },
                     onLoadMoreRows = { rowLimit += ROW_STEP },
                     pageIndex = if (document.format == DocumentFormat.XLSX) sheetIndex else null,
+                    onExportProvider = { state.exportHtmlProvider = it },
                     modifier = Modifier.fillMaxSize(),
                 )
             }

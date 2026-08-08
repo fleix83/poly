@@ -127,6 +127,33 @@ const val HIGHLIGHT_SCRIPT = """
     return null;
   }
 
+  function textNodesIn(range) {
+    var nodes = [];
+    var w = textWalker();
+    while (w.nextNode()) {
+      if (range.intersectsNode(w.currentNode)) nodes.push(w.currentNode);
+    }
+    return nodes;
+  }
+
+  function wrapRange(range, cssColor, wrappers) {
+    var nodes = textNodesIn(range);
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      var start = (node === range.startContainer) ? range.startOffset : 0;
+      var end = (node === range.endContainer) ? range.endOffset : node.nodeValue.length;
+      if (end <= start) continue;
+      if (end < node.nodeValue.length) node.splitText(end);
+      var target = (start > 0) ? node.splitText(start) : node;
+      var span = document.createElement('span');
+      span.setAttribute('data-poly-mark', '1');
+      span.style.backgroundColor = cssColor;
+      target.parentNode.insertBefore(span, target);
+      span.appendChild(target);
+      wrappers.push(span);
+    }
+  }
+
   window.PolyHighlight = {
     setMode: function(active) {
       mode = !!active;
@@ -135,6 +162,24 @@ const val HIGHLIGHT_SCRIPT = """
     setItems: function(json) {
       try { items = JSON.parse(json); } catch (e) { items = []; }
       applyAll();
+    },
+    exportHtml: function() {
+      var wrappers = [];
+      var sorted = items.slice().sort(function(a, b) { return b.start - a.start; });
+      for (var i = 0; i < sorted.length; i++) {
+        var r = rangeFromOffsets(sorted[i].start, sorted[i].end);
+        if (r) wrapRange(r, COLORS[sorted[i].color] || COLORS.YELLOW, wrappers);
+      }
+      var html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+      for (var j = 0; j < wrappers.length; j++) {
+        var span = wrappers[j];
+        var parent = span.parentNode;
+        while (span.firstChild) parent.insertBefore(span.firstChild, span);
+        parent.removeChild(span);
+      }
+      document.body.normalize();
+      applyAll();
+      return html;
     }
   };
 

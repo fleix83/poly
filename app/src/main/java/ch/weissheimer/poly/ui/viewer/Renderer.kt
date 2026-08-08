@@ -36,6 +36,12 @@ class ViewerState(
 ) {
     /** Toolbar-controlled option for the text renderer. */
     var monospace by mutableStateOf(false)
+
+    /**
+     * Set by WebView renderers: returns the current page HTML with highlights
+     * baked in as inline spans, for the PDF export.
+     */
+    var exportHtmlProvider: (suspend () -> String?)? = null
 }
 
 data class RendererCapabilities(

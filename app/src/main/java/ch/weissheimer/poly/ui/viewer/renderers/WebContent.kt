@@ -79,9 +79,27 @@ fun RestrictedWebView(
     onLoadMoreRows: () -> Unit = {},
     /** Scope for created/displayed highlights (xlsx: sheet index). */
     pageIndex: Int? = null,
+    /** Receives a provider for export HTML with baked-in highlights. */
+    onExportProvider: ((suspend () -> String?)?) -> Unit = {},
 ) {
     val webViewHolder = remember { mutableStateOf<WebView?>(null) }
     val documentText = remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(webViewHolder.value) {
+        val webView = webViewHolder.value ?: return@LaunchedEffect
+        onExportProvider {
+            kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+                webView.evaluateJavascript(
+                    "window.PolyHighlight ? PolyHighlight.exportHtml() : null"
+                ) { result ->
+                    val html = result
+                        ?.takeIf { it != "null" }
+                        ?.let { runCatching { org.json.JSONTokener(it).nextValue() as? String }.getOrNull() }
+                    continuation.resume(html) { _, _, _ -> }
+                }
+            }
+        }
+    }
 
     val bridge = remember(session) {
         PolyJsBridge(

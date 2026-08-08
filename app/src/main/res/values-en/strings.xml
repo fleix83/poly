@@ -20,6 +20,22 @@
     <string name="viewer_monospace_off">Default font</string>
     <string name="viewer_text_too_large">This file is too large for the text view (max. 10 MB).</string>
 
+    <!-- Export / Share -->
+    <string name="menu_export_pdf">Export as PDF (with highlights)</string>
+    <string name="menu_export_image">Save as image (with highlights)</string>
+    <string name="menu_save_copy">Save copy with highlights</string>
+    <string name="menu_overwrite">Overwrite original</string>
+    <string name="overwrite_title">Overwrite original?</string>
+    <string name="overwrite_text">The highlights will be written into the original file permanently. This cannot be undone.</string>
+    <string name="overwrite_confirm">Overwrite</string>
+    <string name="share_choice_text">Share with burned-in highlights (PDF/image) or the unmodified original file?</string>
+    <string name="share_with_annotations">With highlights</string>
+    <string name="share_original">Original</string>
+    <string name="export_working">Exporting…</string>
+    <string name="export_done">Saved.</string>
+    <string name="export_failed">Export failed.</string>
+    <string name="gif_static_hint">The GIF is exported as a still image.</string>
+
     <!-- Annotations -->
     <string name="annotation_active">Highlighting active</string>
     <string name="annotation_mode_off">Stop highlighting</string>

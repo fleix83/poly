@@ -22,6 +22,22 @@
     <string name="viewer_monospace_off">Standard-Schrift</string>
     <string name="viewer_text_too_large">Die Datei ist zu gross für die Textanzeige (max. 10 MB).</string>
 
+    <!-- Export / Teilen -->
+    <string name="menu_export_pdf">Als PDF exportieren (mit Markierungen)</string>
+    <string name="menu_export_image">Als Bild speichern (mit Markierungen)</string>
+    <string name="menu_save_copy">Kopie mit Markierungen speichern</string>
+    <string name="menu_overwrite">Original überschreiben</string>
+    <string name="overwrite_title">Original überschreiben?</string>
+    <string name="overwrite_text">Die Markierungen werden dauerhaft in die Originaldatei geschrieben. Dieser Schritt kann nicht rückgängig gemacht werden.</string>
+    <string name="overwrite_confirm">Überschreiben</string>
+    <string name="share_choice_text">Mit eingebrannten Markierungen (PDF/Bild) oder die unveränderte Originaldatei teilen?</string>
+    <string name="share_with_annotations">Mit Markierungen</string>
+    <string name="share_original">Original</string>
+    <string name="export_working">Export läuft…</string>
+    <string name="export_done">Gespeichert.</string>
+    <string name="export_failed">Export fehlgeschlagen.</string>
+    <string name="gif_static_hint">Das GIF wird als statisches Bild exportiert.</string>
+
     <!-- Annotationen -->
     <string name="annotation_active">Markieren aktiv</string>
     <string name="annotation_mode_off">Markieren beenden</string>
