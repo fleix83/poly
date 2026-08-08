@@ -151,9 +151,7 @@ private fun DocumentViewer(
             else -> UnsupportedRenderer()
         }
     }
-    val annotatable = document.format == DocumentFormat.TXT ||
-        document.format == DocumentFormat.MARKDOWN ||
-        document.format.isImage
+    val annotatable = document.format != DocumentFormat.UNKNOWN
 
     ImmersiveMode(hideSystemBars = !chromeVisible)
 

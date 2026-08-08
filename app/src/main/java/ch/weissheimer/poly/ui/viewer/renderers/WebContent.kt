@@ -9,9 +9,21 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import ch.weissheimer.poly.annotation.AnnotationSession
+import ch.weissheimer.poly.annotation.AnnotationType
+import ch.weissheimer.poly.annotation.ReAnchor
 import java.io.ByteArrayInputStream
+import kotlinx.coroutines.flow.distinctUntilChanged
+import org.json.JSONArray
+import org.json.JSONObject
+
+/** Documents larger than this (rendered text) are viewable but not annotatable. */
+private const val MAX_ANNOTATABLE_TEXT = 2_000_000
 
 /**
  * JS → Kotlin bridge, exposed as `Poly`. Callbacks are marshalled to the
@@ -20,6 +32,9 @@ import java.io.ByteArrayInputStream
 class PolyJsBridge(
     private val onContentTap: () -> Unit,
     private val onLoadMoreRows: () -> Unit = {},
+    private val onDocumentText: (String) -> Unit = {},
+    private val onHighlightCreated: (Int, Int) -> Unit = { _, _ -> },
+    private val onHighlightTapped: (String) -> Unit = {},
 ) {
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -32,26 +47,108 @@ class PolyJsBridge(
     fun onLoadMoreRows() {
         mainHandler.post { onLoadMoreRows() }
     }
+
+    @JavascriptInterface
+    fun onDocumentText(text: String) {
+        mainHandler.post { onDocumentText(text) }
+    }
+
+    @JavascriptInterface
+    fun onHighlightCreated(start: Int, end: Int) {
+        mainHandler.post { onHighlightCreated(start, end) }
+    }
+
+    @JavascriptInterface
+    fun onHighlightTapped(id: String) {
+        mainHandler.post { onHighlightTapped(id) }
+    }
 }
 
-/** Tap anywhere except links/buttons toggles the viewer chrome. */
-private const val TAP_SCRIPT = """
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('a') && !e.target.closest('button')) { Poly.onTap(); }
-});
-"""
-
 /**
- * WebView locked down for local content: JS on (needed for the bridge and
- * later for highlighting), every network request blocked.
+ * WebView locked down for local content: JS on (bridge + highlighting),
+ * every network request blocked. With a [session], the injected script wires
+ * text highlights (CSS Custom Highlight API) into the annotation mode.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun RestrictedWebView(
     html: String,
-    bridge: PolyJsBridge,
+    session: AnnotationSession?,
+    onContentTap: () -> Unit,
     modifier: Modifier = Modifier,
+    onLoadMoreRows: () -> Unit = {},
+    /** Scope for created/displayed highlights (xlsx: sheet index). */
+    pageIndex: Int? = null,
 ) {
+    val webViewHolder = remember { mutableStateOf<WebView?>(null) }
+    val documentText = remember { mutableStateOf<String?>(null) }
+
+    val bridge = remember(session) {
+        PolyJsBridge(
+            onContentTap = onContentTap,
+            onLoadMoreRows = onLoadMoreRows,
+            onDocumentText = { text ->
+                if (text.length <= MAX_ANNOTATABLE_TEXT) {
+                    documentText.value = text
+                    session?.load(text)
+                }
+            },
+            onHighlightCreated = { start, end ->
+                val text = documentText.value ?: return@PolyJsBridge
+                if (session != null && end <= text.length && start < end) {
+                    session.add(
+                        session.newTextHighlight(ReAnchor.contextFor(text, start, end), pageIndex)
+                    )
+                }
+            },
+            onHighlightTapped = { id ->
+                if (session != null) {
+                    session.editTarget = session.annotations.firstOrNull { it.id == id }
+                }
+            },
+        )
+    }
+
+    // Push mode + annotations into the page whenever either changes.
+    if (session != null) {
+        LaunchedEffect(session, webViewHolder.value) {
+            val webView = webViewHolder.value ?: return@LaunchedEffect
+            androidx.compose.runtime.snapshotFlow {
+                Triple(
+                    session.annotations
+                        .filter { it.type == AnnotationType.TEXT_HIGHLIGHT && it.pageIndex == pageIndex }
+                        .mapNotNull { annotation ->
+                            annotation.anchor?.let {
+                                Triple(annotation.id, it.startOffset to it.endOffset, annotation.color.name)
+                            }
+                        },
+                    session.modeActive,
+                    session.loaded,
+                )
+            }
+                .distinctUntilChanged()
+                .collect { (highlights, modeActive, _) ->
+                    val json = JSONArray().apply {
+                        highlights.forEach { (id, range, color) ->
+                            put(
+                                JSONObject()
+                                    .put("id", id)
+                                    .put("start", range.first)
+                                    .put("end", range.second)
+                                    .put("color", color)
+                            )
+                        }
+                    }
+                    val itemsLiteral = JSONObject.quote(json.toString())
+                    webView.evaluateJavascript(
+                        "if (window.PolyHighlight) { PolyHighlight.setItems($itemsLiteral); " +
+                            "PolyHighlight.setMode($modeActive); }",
+                        null,
+                    )
+                }
+        }
+    }
+
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -82,9 +179,10 @@ fun RestrictedWebView(
                     ): Boolean = true // no in-page navigation
 
                     override fun onPageFinished(view: WebView, url: String?) {
-                        view.evaluateJavascript(TAP_SCRIPT, null)
+                        view.evaluateJavascript(HIGHLIGHT_SCRIPT, null)
                     }
                 }
+                webViewHolder.value = this
             }
         },
         update = { webView ->

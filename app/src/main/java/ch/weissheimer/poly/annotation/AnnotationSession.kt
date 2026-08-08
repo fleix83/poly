@@ -65,7 +65,7 @@ class AnnotationSession(
         if (!modeActive) editTarget = null
     }
 
-    fun newTextHighlight(anchor: TextAnchor): Annotation = Annotation(
+    fun newTextHighlight(anchor: TextAnchor, pageIndex: Int? = null): Annotation = Annotation(
         id = UUID.randomUUID().toString(),
         fileHash = document.sha256,
         fileUri = document.uri.toString(),
@@ -73,7 +73,7 @@ class AnnotationSession(
         type = AnnotationType.TEXT_HIGHLIGHT,
         color = activeColor,
         anchor = anchor,
-        pageIndex = null,
+        pageIndex = pageIndex,
         points = emptyList(),
         createdAt = System.currentTimeMillis(),
         updatedAt = System.currentTimeMillis(),

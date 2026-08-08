@@ -118,15 +118,12 @@ class OfficeRenderer : DocumentRenderer {
                         },
                     )
                 }
-                val bridge = remember(document.uri) {
-                    PolyJsBridge(
-                        onContentTap = { state.onContentTap() },
-                        onLoadMoreRows = { rowLimit += ROW_STEP },
-                    )
-                }
                 RestrictedWebView(
                     html = l.html,
-                    bridge = bridge,
+                    session = state.annotations,
+                    onContentTap = { state.onContentTap() },
+                    onLoadMoreRows = { rowLimit += ROW_STEP },
+                    pageIndex = if (document.format == DocumentFormat.XLSX) sheetIndex else null,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

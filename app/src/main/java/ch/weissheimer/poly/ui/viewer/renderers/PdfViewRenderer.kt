@@ -1,6 +1,7 @@
 package ch.weissheimer.poly.ui.viewer.renderers
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -37,19 +39,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import ch.weissheimer.poly.R
+import ch.weissheimer.poly.annotation.AnnotationType
 import ch.weissheimer.poly.ui.viewer.DocumentRenderer
 import ch.weissheimer.poly.ui.viewer.RendererCapabilities
 import ch.weissheimer.poly.ui.viewer.RendererError
 import ch.weissheimer.poly.ui.viewer.RendererLoading
 import ch.weissheimer.poly.ui.viewer.ViewerState
+import ch.weissheimer.poly.ui.viewer.annotationGestures
 import ch.weissheimer.poly.ui.viewer.pinchToZoom
 import ch.weissheimer.poly.viewer.pdf.PdfPageStore
 import ch.weissheimer.poly.viewer.pdf.PdfPasswordRequiredException
@@ -146,8 +153,17 @@ private fun PasswordDialog(
     )
 }
 
+/** Container-space rect preview while dragging on a page. */
+private class PdfDragPreview(
+    val pageIndex: Int,
+    val rect: List<Float>,
+)
+
 @Composable
 private fun PdfPages(store: PdfPageStore, state: ViewerState, modifier: Modifier) {
+    val session = state.annotations
+    LaunchedEffect(Unit) { session.load(null) }
+
     BoxWithConstraints(modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val viewportWidth = maxWidth
@@ -165,9 +181,86 @@ private fun PdfPages(store: PdfPageStore, state: ViewerState, modifier: Modifier
         }
         val renderWidthPx = (baseWidthPx * settledZoom).roundToInt()
 
+        var containerCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+        val pageCoords = remember { HashMap<Int, LayoutCoordinates>() }
+        var dragPage by remember { mutableStateOf<Int?>(null) }
+        var dragStartNorm by remember { mutableStateOf<Pair<Float, Float>?>(null) }
+        var preview by remember { mutableStateOf<PdfDragPreview?>(null) }
+
+        /** Container position → (pageIndex, normalized page coords). */
+        fun locate(position: Offset): Triple<Int, Float, Float>? {
+            val container = containerCoords ?: return null
+            if (!container.isAttached) return null
+            for ((index, coords) in pageCoords) {
+                if (!coords.isAttached) continue
+                val local = coords.localPositionOf(container, position)
+                val size = coords.size
+                if (local.y >= 0f && local.y <= size.height) {
+                    return Triple(
+                        index,
+                        (local.x / size.width).coerceIn(0f, 1f),
+                        (local.y / size.height).coerceIn(0f, 1f),
+                    )
+                }
+            }
+            return null
+        }
+
         Box(
             Modifier
                 .fillMaxSize()
+                .onGloballyPositioned { containerCoords = it }
+                .annotationGestures(
+                    enabled = session.modeActive,
+                    onTap = { position ->
+                        val (page, x, y) = locate(position) ?: return@annotationGestures
+                        session.editTarget = session.annotations.lastOrNull { annotation ->
+                            annotation.pageIndex == page &&
+                                annotation.type == AnnotationType.RECT &&
+                                annotation.points.size == 4 &&
+                                x >= annotation.points[0] - 0.01f && x <= annotation.points[2] + 0.01f &&
+                                y >= annotation.points[1] - 0.01f && y <= annotation.points[3] + 0.01f
+                        }
+                    },
+                    onDragStart = { position ->
+                        val located = locate(position)
+                        dragPage = located?.first
+                        dragStartNorm = located?.let { it.second to it.third }
+                        preview = null
+                    },
+                    onDrag = { position ->
+                        val page = dragPage ?: return@annotationGestures
+                        val start = dragStartNorm ?: return@annotationGestures
+                        val located = locate(position) ?: return@annotationGestures
+                        // Rect stays on the page where the drag started.
+                        val (x, y) = if (located.first == page) {
+                            located.second to located.third
+                        } else return@annotationGestures
+                        preview = PdfDragPreview(
+                            pageIndex = page,
+                            rect = listOf(
+                                minOf(start.first, x), minOf(start.second, y),
+                                maxOf(start.first, x), maxOf(start.second, y),
+                            ),
+                        )
+                    },
+                    onDragEnd = { cancelled ->
+                        val current = preview
+                        if (!cancelled && current != null &&
+                            current.rect[2] - current.rect[0] > 0.01f &&
+                            current.rect[3] - current.rect[1] > 0.01f
+                        ) {
+                            session.add(
+                                session.newShape(
+                                    AnnotationType.RECT, current.rect, current.pageIndex,
+                                )
+                            )
+                        }
+                        preview = null
+                        dragPage = null
+                        dragStartNorm = null
+                    },
+                )
                 .pinchToZoom(
                     onZoomEnd = { settledZoom = zoom },
                 ) { change -> zoom = (zoom * change).coerceIn(1f, 4f) }
@@ -191,6 +284,9 @@ private fun PdfPages(store: PdfPageStore, state: ViewerState, modifier: Modifier
                             index = index,
                             renderWidthPx = renderWidthPx,
                             aspect = store.pageAspects.getOrElse(index) { 1.414f },
+                            session = session,
+                            preview = preview,
+                            onPositioned = { coords -> pageCoords[index] = coords },
                         )
                     }
                 }
@@ -260,6 +356,9 @@ private fun PdfPage(
     index: Int,
     renderWidthPx: Int,
     aspect: Float,
+    session: ch.weissheimer.poly.annotation.AnnotationSession,
+    preview: PdfDragPreview?,
+    onPositioned: (LayoutCoordinates) -> Unit,
 ) {
     val bitmap by produceState<Bitmap?>(null, store, index, renderWidthPx) {
         value = runCatching { store.renderPage(index, renderWidthPx) }.getOrNull() ?: value
@@ -268,7 +367,8 @@ private fun PdfPage(
         Modifier
             .fillMaxWidth()
             .aspectRatio(1f / aspect)
-            .background(androidx.compose.ui.graphics.Color.White),
+            .background(androidx.compose.ui.graphics.Color.White)
+            .onGloballyPositioned(onPositioned),
     ) {
         bitmap?.let {
             Image(
@@ -276,6 +376,27 @@ private fun PdfPage(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
             )
+        }
+        Canvas(Modifier.fillMaxSize()) {
+            fun drawNormalizedRect(points: List<Float>, color: androidx.compose.ui.graphics.Color) {
+                if (points.size != 4) return
+                drawRect(
+                    color = color,
+                    topLeft = Offset(points[0] * size.width, points[1] * size.height),
+                    size = androidx.compose.ui.geometry.Size(
+                        (points[2] - points[0]) * size.width,
+                        (points[3] - points[1]) * size.height,
+                    ),
+                )
+            }
+            for (annotation in session.annotations) {
+                if (annotation.pageIndex == index && annotation.type == AnnotationType.RECT) {
+                    drawNormalizedRect(annotation.points, annotation.color.color.copy(alpha = 0.35f))
+                }
+            }
+            if (preview?.pageIndex == index) {
+                drawNormalizedRect(preview.rect, session.activeColor.color.copy(alpha = 0.45f))
+            }
         }
     }
 }

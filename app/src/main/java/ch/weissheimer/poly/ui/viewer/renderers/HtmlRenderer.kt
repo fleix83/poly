@@ -75,12 +75,10 @@ class HtmlRenderer(private val fileRepository: FileRepository) : DocumentRendere
                         )
                     }
                 }
-                val bridge = remember(state.document.uri) {
-                    PolyJsBridge(onContentTap = { state.onContentTap() })
-                }
                 RestrictedWebView(
                     html = l.html,
-                    bridge = bridge,
+                    session = state.annotations,
+                    onContentTap = { state.onContentTap() },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
