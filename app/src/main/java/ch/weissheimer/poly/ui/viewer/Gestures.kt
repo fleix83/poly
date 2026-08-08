@@ -10,8 +10,14 @@ import kotlin.math.abs
  * Intercepts two-finger pinches in the Initial pass (before children see
  * them), so single-finger scrolling of the child keeps working. This is the
  * same pointer-count split the annotation mode uses later.
+ *
+ * [onZoomEnd] fires once when a gesture that actually zoomed ends – used to
+ * re-render content at the settled scale.
  */
-fun Modifier.pinchToZoom(onZoom: (Float) -> Unit): Modifier = pointerInput(Unit) {
+fun Modifier.pinchToZoom(
+    onZoomEnd: () -> Unit = {},
+    onZoom: (Float) -> Unit,
+): Modifier = pointerInput(Unit) {
     awaitPointerEventScope {
         while (true) {
             var zooming = false
@@ -34,6 +40,7 @@ fun Modifier.pinchToZoom(onZoom: (Float) -> Unit): Modifier = pointerInput(Unit)
                     }
                 }
             }
+            if (zooming) onZoomEnd()
         }
     }
 }

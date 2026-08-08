@@ -20,6 +20,14 @@
     <string name="viewer_monospace_off">Default font</string>
     <string name="viewer_text_too_large">This file is too large for the text view (max. 10 MB).</string>
 
+    <!-- PDF -->
+    <string name="pdf_error">This PDF could not be opened.</string>
+    <string name="pdf_password_title">Password required</string>
+    <string name="pdf_password_prompt">This PDF is protected. Enter the password.</string>
+    <string name="pdf_password_wrong">Wrong password</string>
+    <string name="pdf_goto_page">Go to page</string>
+    <string name="action_cancel">Cancel</string>
+
     <!-- Formats -->
     <string name="format_txt">Text</string>
     <string name="format_md">Markdown</string>

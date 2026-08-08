@@ -22,6 +22,16 @@
     <string name="viewer_monospace_off">Standard-Schrift</string>
     <string name="viewer_text_too_large">Die Datei ist zu gross für die Textanzeige (max. 10 MB).</string>
 
+    <!-- PDF -->
+    <string name="pdf_error">Das PDF konnte nicht geöffnet werden.</string>
+    <string name="pdf_password_title">Passwort erforderlich</string>
+    <string name="pdf_password_prompt">Dieses PDF ist geschützt. Gib das Passwort ein.</string>
+    <string name="pdf_password_wrong">Falsches Passwort</string>
+    <string name="pdf_page_indicator" translatable="false">%1$d/%2$d</string>
+    <string name="pdf_goto_page">Gehe zu Seite</string>
+    <string name="action_ok" translatable="false">OK</string>
+    <string name="action_cancel">Abbrechen</string>
+
     <!-- Formats -->
     <string name="format_txt">Text</string>
     <string name="format_md">Markdown</string>

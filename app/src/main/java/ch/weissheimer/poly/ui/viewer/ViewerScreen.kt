@@ -55,6 +55,7 @@ import ch.weissheimer.poly.core.DocumentFormat
 import ch.weissheimer.poly.data.DocumentInfo
 import ch.weissheimer.poly.ui.viewer.renderers.ImageRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.MarkdownRenderer
+import ch.weissheimer.poly.ui.viewer.renderers.PdfViewRenderer
 import ch.weissheimer.poly.ui.viewer.renderers.TextRenderer
 
 @Composable
@@ -98,6 +99,7 @@ private fun DocumentViewer(document: DocumentInfo, onBack: () -> Unit) {
             DocumentFormat.TXT -> TextRenderer(container.fileRepository)
             DocumentFormat.MARKDOWN -> MarkdownRenderer(container.fileRepository)
             DocumentFormat.JPEG, DocumentFormat.PNG, DocumentFormat.GIF -> ImageRenderer()
+            DocumentFormat.PDF -> PdfViewRenderer()
             else -> UnsupportedRenderer()
         }
     }

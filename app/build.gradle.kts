@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.markwon.ext.tables)
     implementation(libs.markwon.ext.strikethrough)
     implementation(libs.markwon.linkify)
+    implementation(libs.pdfbox.android)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
